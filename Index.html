@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Калькулятор износа инженерных систем и кровель (СП 547.1325800.2025)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+	<style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: #eef2f7;
+            margin: 0;
+            padding: 20px;
+            color: #1a2c3e;
+            transition: all 0.2s;
+        }
+        body.res-pc { max-width: 1600px; margin: 0 auto; font-size: 16px; }
+        body.res-tablet { max-width: 1000px; margin: 0 auto; font-size: 14px; }
+        body.res-phone { max-width: 100%; margin: 0 auto; font-size: 12px; padding: 10px; }
+        body.res-phone .container { padding: 12px; }
+        body.res-phone .elem-table th, body.res-phone .elem-table td { padding: 4px 2px; font-size: 0.7rem; }
+        body.res-phone input[type="number"] { width: 60px; }
+        body.res-phone .btn { padding: 6px 12px; font-size: 0.8rem; }
+        
+        .container {
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+            padding: 24px 28px;
+            transition: all 0.2s;
+        }
+        h1 { font-size: 1.8rem; margin: 0 0 8px; }
+        .resolution-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .resolution-bar label { font-weight: 600; margin-right: 5px; }
+        .res-btn {
+            background: #eef3fc;
+            border: 1px solid #cbdbe0;
+            padding: 4px 12px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .res-btn.active { background: #2c7da0; color: white; border-color: #2c7da0; }
+        .address-bar {
+            background: #eef3fc;
+            padding: 12px 20px;
+            border-radius: 40px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: baseline;
+        }
+        .address-bar label { font-weight: 600; }
+        .address-bar input { flex: 2; min-width: 250px; padding: 8px 12px; border-radius: 32px; border: 1px solid #cbdbe0; }
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            border-bottom: 2px solid #cfdfed;
+            margin-bottom: 24px;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 22px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 30px 30px 0 0;
+            font-size: 0.9rem;
+        }
+        .tab-btn.active { background: white; border-bottom: 3px solid #1f6e8c; color: #1f6e8c; }
+        .tab-pane { display: none; }
+        .tab-pane.active-pane { display: block; }
+        .system-card {
+            margin-bottom: 30px;
+            border: 1px solid #dce5ed;
+            border-radius: 24px;
+            padding: 16px;
+            background: #ffffff;
+        }
+        .elem-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            margin: 12px 0;
+            table-layout: fixed;
+        }
+        .elem-table th, .elem-table td {
+            border: 1px solid #cbdae9;
+            padding: 8px 6px;
+            vertical-align: middle;
+            text-align: center;
+        }
+        .elem-table th { background: #eaf2f9; }
+        .elem-table th:nth-child(1) { width: 28%; }
+        .elem-table th:nth-child(2) { width: 8%; }
+        .elem-table th:nth-child(3) { width: 14%; }
+        .elem-table th:nth-child(4) { width: 10%; }
+        .elem-table th:nth-child(5) { width: 10%; }
+        .elem-table th:nth-child(6) { width: 10%; }
+        .elem-table th:nth-child(7) { width: 8%; }
+        input, select {
+            padding: 6px 8px;
+            border-radius: 12px;
+            border: 1px solid #b9cfdf;
+            width: 100%;
+            font-size: 0.8rem;
+        }
+        input[type="number"] { width: 100%; }
+        .fi-control {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .fi-control input { flex: 1; min-width: 50px; }
+        .fi-buttons {
+            display: flex;
+            gap: 4px;
+        }
+        .fi-btn {
+            background: #eef3fc;
+            border: 1px solid #cbdbe0;
+            border-radius: 16px;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+        .btn-icon {
+            background: #eef2f5;
+            border: 1px solid #b9cfdf;
+            border-radius: 20px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .calc-protocol {
+            background: #f7fafd;
+            border-radius: 20px;
+            padding: 16px;
+            margin: 16px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+        }
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .btn {
+            background: #2c7da0;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 36px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-outline {
+            background: white;
+            border: 1px solid #2c7da0;
+            color: #2c7da0;
+        }
+        .donate-btn {
+            background: #f0c674;
+            color: #3b2e1e;
+            border: none;
+            padding: 6px 15px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        footer {
+            margin-top: 32px;
+            font-size: 0.7rem;
+            text-align: center;
+            color: #6c8ea0;
+            border-top: 1px solid #cde0ec;
+            padding-top: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.7);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 24px;
+            width: 80%;
+            max-width: 700px;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .photo-gallery-modal {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .photo-card {
+            width: 120px;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            padding: 8px;
+        }
+        .photo-card img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .photo-card button {
+            margin-top: 6px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+        .roof-type-selector {
+            margin-bottom: 15px;
+            padding: 8px;
+            background: #eef3fc;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        @media (max-width: 700px) {
+            .elem-table th, .elem-table td { padding: 4px 2px; font-size: 0.7rem; }
+            input[type="number"] { width: 60px; }
+            .fi-control { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body class="res-pc">
+<div class="container">
+    <div class="resolution-bar">
+        <span>📱 Разрешение:</span>
+        <button class="res-btn active" data-res="pc">ПК</button>
+        <button class="res-btn" data-res="tablet">Планшет</button>
+        <button class="res-btn" data-res="phone">Смартфон</button>
+    </div>
+    <h1>📐 Технический расчёт физического износа</h1>
+    <div class="address-bar">
+        <label>🏢 Объект (адрес, МКД):</label>
+        <input type="text" id="addressInput" placeholder="г. Санкт-Петербург, Моховая ул., д.5, лит.А">
+        <label>📅 Дата обследования:</label>
+        <input type="text" id="dateInput" placeholder="15.04.2026">
+    </div>
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="tab1">💧 ХВС</button>
+        <button class="tab-btn" data-tab="tab2">🔥 ГВС</button>
+        <button class="tab-btn" data-tab="tab3">🌡️ Отопление</button>
+        <button class="tab-btn" data-tab="tab4">🚽 Канализация</button>
+        <button class="tab-btn" data-tab="tab5">⚡ Электроснабжение</button>
+        <button class="tab-btn" data-tab="tab6">🏠 Кровля</button>
+    </div>
+
+    <div id="tab1" class="tab-pane active-pane"><div id="hvs-root"></div></div>
+    <div id="tab2" class="tab-pane"><div id="gvs-root"></div></div>
+    <div id="tab3" class="tab-pane"><div id="heat-root"></div></div>
+    <div id="tab4" class="tab-pane"><div id="sewer-root"></div></div>
+    <div id="tab5" class="tab-pane"><div id="elec-root"></div></div>
+    <div id="tab6" class="tab-pane"><div id="roof-root"></div></div>
+
+    <div class="btn-group">
+        <button class="btn" id="newCalcBtn">🆕 Новый расчёт (текущая система)</button>
+        <button class="btn-outline btn" id="clearAllBtn">🗑️ Очистить все системы</button>
+        <button class="btn-outline btn" id="fullResetBtn">⚠️ Полный сброс</button>
+    </div>
+
+    <footer>
+        <span>Разработчик: ИП Анисимов Виктор Максимович | ИНН 780254530403 | Тел.: +7 (953) 365-01-27</span>
+        <button class="donate-btn" id="donateBtn">☕ Поддержать разработчика</button>
+    </footer>
+</div>
+
+<script>
+// ======================== ЧАСТЬ 1: БИБЛИОТЕКИ ДЕФЕКТОВ, СТРУКТУРА ДАННЫХ, ОСНОВНЫЕ ФУНКЦИИ ========================
+// ======================== ЧАСТЬ 2: БИБЛИОТЕКИ ДЕФЕКТОВ (продолжение) и структура данных ========================
+// ======================== ИНИЦИАЛИЗАЦИЯ INDEXEDDB ДЛЯ ФОТОГРАФИЙ ========================
+const DB_NAME = 'WearCalcPhotosDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'photos';
+
+let db = null;
+
+function initIndexedDB() {
+    return new Promise((resolve, reject) => {
+        if (db && db.name === DB_NAME) {
+            resolve(db);
+            return;
+        }
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+            db = request.result;
+            resolve(db);
+        };
+        request.onupgradeneeded = (event) => {
+            const dbUpgrade = event.target.result;
+            if (!dbUpgrade.objectStoreNames.contains(STORE_NAME)) {
+                dbUpgrade.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+            }
+        };
+    });
+}
+
+// Сохранить Blob фото, вернуть ID
+async function savePhotoBlob(blob) {
+    await initIndexedDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.add({ blob: blob });
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// Получить Blob по ID
+async function getPhotoBlob(id) {
+    await initIndexedDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.get(id);
+        request.onsuccess = () => resolve(request.result ? request.result.blob : null);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// Удалить фото по ID
+async function deletePhotoBlob(id) {
+    await initIndexedDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.delete(id);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
+}
+// Библиотеки дефектов для инженерных систем и кровель (с указанием интервалов)
+const DEFECT_LIB = {
+    water: [
+        { name: "Ослабление сальников/прокладок (выявлено)", interval: "0–20" },
+        { name: "Повреждение окраски (выявлено)", interval: "0–20" },
+        { name: "Нарушение теплоизоляции <30% длины", interval: "0–20" },
+        { name: "Нарушение теплоизоляции ≥30% длины", interval: "21–40" },
+        { name: "Капельные течи <3 на 50м", interval: "0–20" },
+        { name: "Капельные течи 3–6 на 50м", interval: "21–40" },
+        { name: "Капельные течи >6 на 50м", interval: "41–60" },
+        { name: "Коррозия <10% длины", interval: "21–40" },
+        { name: "Коррозия 10–30% длины", interval: "41–60" },
+        { name: "Коррозия >30% длины", interval: "61–80" },
+        { name: "Ржавые потеки, хомуты <3/50м", interval: "0–20" },
+        { name: "Ржавые потеки, хомуты 3–6/50м", interval: "21–40" },
+        { name: "Ржавые потеки, хомуты >6/50м", interval: "41–60" },
+        { name: "Следы ремонта (замена) <10%", interval: "21–40" },
+        { name: "Следы ремонта (замена) 10–30%", interval: "41–60" },
+        { name: "Следы ремонта (замена) >30%", interval: "61–80" },
+        { name: "Выход из строя арматуры 10–30%", interval: "21–40" },
+        { name: "Выход из строя арматуры >30%", interval: "41–60" },
+        { name: "Пользовательский ввод", interval: "---" }
+    ],
+    sewer: [
+        { name: "Ослабление присоединений (выявлено)", interval: "0–20" },
+        { name: "Нарушение уклонов (выявлено)", interval: "0–20" },
+        { name: "Отсутствие ревизий (выявлено)", interval: "21–40" },
+        { name: "Коррозия <10% длины", interval: "21–40" },
+        { name: "Коррозия 10–30% длины", interval: "41–60" },
+        { name: "Коррозия >30% длины", interval: "61–80" },
+        { name: "Повреждения 3–5/50м", interval: "21–40" },
+        { name: "Повреждения 5–7/50м", interval: "41–60" },
+        { name: "Повреждения >7/50м", interval: "61–80" },
+        { name: "Течи в раструбах 3–6/50м", interval: "41–60" },
+        { name: "Следы ремонта (замена 10–30%)", interval: "41–60" },
+        { name: "Следы ремонта (>30%)", interval: "61–80" },
+        { name: "Пользовательский ввод", interval: "---" }
+    ],
+    elec: [
+        { name: "Неисправность креплений <10% элементов", interval: "0–20" },
+        { name: "Неисправность креплений 10–30%", interval: "21–40" },
+        { name: "Повреждение изоляции <10% длины", interval: "0–20" },
+        { name: "Повреждение изоляции 10–30%", interval: "21–40" },
+        { name: "Повреждение изоляции >30%", interval: "41–60" },
+        { name: "Отсутствие заземления (выявлено)", interval: "41–60" },
+        { name: "Оголение проводов", interval: "61–80" },
+        { name: "Видимые повреждения 10–30%", interval: "21–40" },
+        { name: "Видимые повреждения >30%", interval: "41–60" },
+        { name: "Коррозия шкафов (выявлено)", interval: "0–20" },
+        { name: "Пользовательский ввод", interval: "---" }
+    ],
+    roof: {
+        rolled: [
+            { name: "Мелкие повреждения ковра <2 на 100м² [А.46]", interval: "0–20" },
+            { name: "Мелкие повреждения ковра ≥2 на 100м² [А.46]", interval: "21–40" },
+            { name: "Вздутия, трещины <10% [А.46]", interval: "21–40" },
+            { name: "Вздутия, трещины 10–30% [А.46]", interval: "41–60" },
+            { name: "Вздутия, трещины >30% [А.46]", interval: "61–80" },
+            { name: "Разрывы ковра <10% [А.46]", interval: "21–40" },
+            { name: "Разрывы ковра 10–30% [А.46]", interval: "41–60" },
+            { name: "Разрывы ковра >30% [А.46]", interval: "61–80" },
+            { name: "Пользовательский ввод", interval: "---" }
+        ],
+        metal: [
+            { name: "Ослабление креплений <10% [А.48]", interval: "0–20" },
+            { name: "Ослабление креплений ≥10% [А.48]", interval: "21–40" },
+            { name: "Свищи 2–4 на 100м² [А.48]", interval: "21–40" },
+            { name: "Свищи 4–6 на 100м² [А.48]", interval: "41–60" },
+            { name: "Свищи >6 на 100м² [А.48]", interval: "61–80" },
+            { name: "Ржавчина 10–30% [А.48]", interval: "21–40" },
+            { name: "Ржавчина 30–50% [А.48]", interval: "41–60" },
+            { name: "Ржавчина >50% [А.48]", interval: "61–80" },
+            { name: "Пользовательский ввод", interval: "---" }
+        ],
+        tile: [
+            { name: "Повреждения черепиц <2 на 1м² [А.50]", interval: "21–40" },
+            { name: "Повреждения черепиц 2–4 на 1м² [А.50]", interval: "41–60" },
+            { name: "Повреждения черепиц >4 на 1м² [А.50]", interval: "61–80" },
+            { name: "Просветы 2–4 на 100м² [А.50]", interval: "41–60" },
+            { name: "Пользовательский ввод", interval: "---" }
+        ],
+        asbestos: [
+            { name: "Отколы и трещины 2–4 на 100м² [А.49]", interval: "21–40" },
+            { name: "Отколы и трещины 4–6 на 100м² [А.49]", interval: "41–60" },
+            { name: "Отколы и трещины >6 на 100м² [А.49]", interval: "61–80" },
+            { name: "Отрыв листов 10–30% [А.49]", interval: "41–60" },
+            { name: "Пользовательский ввод", interval: "---" }
+        ],
+        combined: [
+            { name: "Мелкие выбоины <10% [А.44]", interval: "0–20" },
+            { name: "Мелкие выбоины ≥10% [А.44]", interval: "21–40" },
+            { name: "Пробоины 2–5 на 100м² [А.44]", interval: "21–40" },
+            { name: "Трещины 0.5–1.4 мм [А.44]", interval: "21–40" },
+            { name: "Трещины 1.4–2.0 мм [А.44]", interval: "41–60" },
+            { name: "Прогиб 1/100–1/50 [А.44]", interval: "41–60" },
+            { name: "Пользовательский ввод", interval: "---" }
+        ]
+    }
+};
+
+// Структура данных для систем (инженерные + кровля)
+let systemsData = {
+    hvs: { name: "ХВС", defectLib: DEFECT_LIB.water, elements: [] },
+    gvs: { name: "ГВС", defectLib: DEFECT_LIB.water, elements: [] },
+    heat: { name: "Отопление", defectLib: DEFECT_LIB.water, elements: [] },
+    sewer: { name: "Канализация", defectLib: DEFECT_LIB.sewer, elements: [] },
+    elec: { name: "Электроснабжение", defectLib: DEFECT_LIB.elec, elements: [] },
+    roof: { name: "Кровля", defectLib: DEFECT_LIB.roof.rolled, elements: [], roofType: "rolled" }
+};
+
+// Сохранение в localStorage
+function saveToLocal() {
+    let store = {};
+    for (let k in systemsData) {
+        store[k] = { elements: systemsData[k].elements, roofType: systemsData[k].roofType };
+    }
+    localStorage.setItem('wearCalcData', JSON.stringify(store));
+}
+// Загрузка из localStorage
+function loadFromLocal() {
+    let raw = localStorage.getItem('wearCalcData');
+    if (raw) {
+        try {
+            let store = JSON.parse(raw);
+            for (let k in store) {
+                if (systemsData[k]) {
+                    systemsData[k].elements = store[k].elements || [];
+                    if (store[k].roofType) systemsData[k].roofType = store[k].roofType;
+                    if (k === 'roof') systemsData.roof.defectLib = DEFECT_LIB.roof[systemsData.roof.roofType] || DEFECT_LIB.roof.rolled;
+                }
+            }
+        } catch(e) {}
+    }
+}
+
+// Очистка всех систем
+function clearAllSystems() {
+    for (let k in systemsData) {
+        systemsData[k].elements = [];
+        if (k === 'roof') { systemsData.roof.roofType = "rolled"; systemsData.roof.defectLib = DEFECT_LIB.roof.rolled; }
+    }
+    saveToLocal();
+    renderAllSystems();
+}
+// Очистка текущей системы
+function clearCurrentSystem() {
+    const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
+    let sysKey = '';
+    if (activeTab === 'tab1') sysKey = 'hvs';
+    else if (activeTab === 'tab2') sysKey = 'gvs';
+    else if (activeTab === 'tab3') sysKey = 'heat';
+    else if (activeTab === 'tab4') sysKey = 'sewer';
+    else if (activeTab === 'tab5') sysKey = 'elec';
+    else if (activeTab === 'tab6') sysKey = 'roof';
+    if (sysKey) {
+        systemsData[sysKey].elements = [];
+        if (sysKey === 'roof') { systemsData.roof.roofType = "rolled"; systemsData.roof.defectLib = DEFECT_LIB.roof.rolled; }
+        saveToLocal();
+        renderSystem(sysKey, `${sysKey}-root`);
+    }
+}
+// Полный сброс (удаление localStorage и перезагрузка)
+function fullReset() { 
+    localStorage.removeItem('wearCalcData'); 
+    location.reload(); 
+}
+
+// Получить значение Фi по интервалу (среднее для автоматического выбора)
+function getDefaultFiByInterval(interval) {
+    if (interval === "0–20") return 10;
+    if (interval === "21–40") return 30.5;
+    if (interval === "41–60") return 50.5;
+    if (interval === "61–80") return 70.5;
+    return 10;
+}
+// Получить Фi для дефекта (с учётом ручного ввода)
+function getFiForPart(part, defectLib, defectIdx) {
+    if (part.customFi !== undefined && part.customFi !== null && !isNaN(part.customFi)) return part.customFi;
+    let defect = defectLib[defectIdx];
+    if (defect && defect.interval && defect.interval !== "---") return getDefaultFiByInterval(defect.interval);
+    return 10;
+}
+// Установить границу (нижнюю, среднюю, верхнюю) для дефекта
+function setFiBoundary(part, defectLib, defectIdx, boundary) {
+    let defect = defectLib[defectIdx];
+    if (!defect || !defect.interval || defect.interval === "---") return;
+    let parts = defect.interval.split("–");
+    if (parts.length !== 2) return;
+    let low = parseFloat(parts[0]);
+    let high = parseFloat(parts[1]);
+    if (isNaN(low) || isNaN(high)) return;
+    let val;
+    if (boundary === 'lower') val = low;
+    else if (boundary === 'upper') val = high;
+    else val = (low + high) / 2;
+    part.customFi = val;
+    saveToLocal();
+}
+
+// Вычисление статистики по системе (сумма уникальных Pк, сумма Фi*Pi)
+function computeSystemStats(sys) {
+    let totalFiPi = 0, uniquePkSum = 0;
+    for (let elem of sys.elements) {
+        uniquePkSum += elem.totalSize;
+        for (let part of elem.parts) {
+            let fi = getFiForPart(part, sys.defectLib, part.defectIdx);
+            totalFiPi += fi * part.defectSize;
+        }
+    }
+    let rawWear = uniquePkSum ? totalFiPi / uniquePkSum : 0;
+    let roundedWear = Math.round(rawWear);
+    let category = "";
+    if (roundedWear <= 30) category = "1-я категория (капремонт не требуется)";
+    else if (roundedWear <= 50) category = "2-я категория (капремонт в течение 5 лет)";
+    else if (roundedWear <= 65) category = "3-я категория (приоритетный капремонт до 3 лет)";
+    else category = "4-я категория (требуется инструментальное обследование)";
+    return { totalFiPi, uniquePkSum, rawWear, roundedWear, category };
+}
+// ======================== ЧАСТЬ 3: ФУНКЦИИ РАБОТЫ С ФОТОГРАФИЯМИ И ОТРИСОВКА ТАБЛИЦ ========================
+// ======================== ЧАСТЬ 3: ФУНКЦИИ РАБОТЫ С ФОТОГРАФИЯМИ (INDEXEDDB) И ОТРИСОВКА ТАБЛИЦ ========================
+
+// Глобальная переменная для текущего контекста модалки
+let currentPhotoContext = null;
+
+// Открыть модальное окно для фотографий (с индикатором загрузки)
+async function openPhotoModal(sysKey, eIdx, pIdx) {
+    const sys = systemsData[sysKey];
+    const part = sys.elements[eIdx].parts[pIdx];
+    const modal = document.getElementById('photoModal');
+    const galleryDiv = document.getElementById('modalPhotoGallery');
+    const countSpan = document.getElementById('photoCount');
+    const loadingDiv = document.getElementById('modalLoading');
+    const closeSpan = modal.querySelector('.close');
+    const addBtnElem = document.getElementById('modalAddPhotoBtn');
+    
+    currentPhotoContext = { sysKey, eIdx, pIdx };
+    
+    // Функция отрисовки галереи (асинхронная, подгружает Blob по ID)
+    async function renderGallery() {
+        galleryDiv.innerHTML = '';
+        if (part.photoIds && part.photoIds.length) {
+            for (let idx = 0; idx < part.photoIds.length; idx++) {
+                const photoId = part.photoIds[idx];
+                const blob = await getPhotoBlob(photoId);
+                if (blob) {
+                    const url = URL.createObjectURL(blob);
+                    const card = document.createElement('div');
+                    card.className = 'photo-card';
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.style.maxWidth = '100%';
+                    img.style.cursor = 'pointer';
+                    img.onclick = () => window.open(url);
+                    const delBtn = document.createElement('button');
+                    delBtn.textContent = 'Удалить';
+                    delBtn.onclick = async (e) => {
+                        e.stopPropagation();
+                        // Удаляем из IndexedDB
+                        await deletePhotoBlob(photoId);
+                        // Удаляем из массива part.photoIds
+                        part.photoIds.splice(idx, 1);
+                        saveToLocal();
+                        await renderGallery(); // обновляем галерею
+                        renderSystem(sysKey, `${sysKey}-root`); // обновить таблицу
+                    };
+                    card.appendChild(img);
+                    card.appendChild(delBtn);
+                    galleryDiv.appendChild(card);
+                }
+            }
+        } else {
+            galleryDiv.innerHTML = '<p>Нет фотографий</p>';
+        }
+        countSpan.textContent = part.photoIds ? part.photoIds.length : 0;
+    }
+    
+    // Первоначальная отрисовка
+    await renderGallery();
+    
+    // Обработчик добавления фотографий (с блокировкой)
+    if (addBtnElem) {
+        const newAddBtn = addBtnElem.cloneNode(true);
+        addBtnElem.parentNode.replaceChild(newAddBtn, addBtnElem);
+        newAddBtn.onclick = async () => {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.multiple = true;
+            fileInput.onchange = async (e) => {
+                const files = Array.from(fileInput.files);
+                if (files.length === 0) return;
+                
+                // Блокируем интерфейс
+                if (closeSpan) { closeSpan.style.pointerEvents = 'none'; closeSpan.style.opacity = '0.5'; }
+                if (loadingDiv) loadingDiv.style.display = 'block';
+                newAddBtn.disabled = true;
+                newAddBtn.textContent = '⏳ Загрузка...';
+                
+                for (const file of files) {
+                    // Сохраняем Blob в IndexedDB
+                    const photoId = await savePhotoBlob(file);
+                    if (!part.photoIds) part.photoIds = [];
+                    part.photoIds.push(photoId);
+                    saveToLocal();
+                    await renderGallery();      // обновить галерею
+                    renderSystem(sysKey, `${sysKey}-root`); // обновить таблицу
+                }
+                
+                // Разблокируем
+                if (closeSpan) { closeSpan.style.pointerEvents = 'auto'; closeSpan.style.opacity = '1'; }
+                if (loadingDiv) loadingDiv.style.display = 'none';
+                newAddBtn.disabled = false;
+                newAddBtn.textContent = '+ Добавить фото';
+            };
+            fileInput.click();
+        };
+    }
+    
+    modal.style.display = 'block';
+}
+
+// Изменение типа кровли
+function changeRoofType(newType) {
+    const sys = systemsData.roof;
+    sys.roofType = newType;
+    sys.defectLib = DEFECT_LIB.roof[newType];
+    saveToLocal();
+    renderSystem('roof', 'roof-root');
+}
+
+function buildSelectOptions(defectArray, selectedIdx) {
+    return defectArray.map((d, idx) => `<option value="${idx}" ${selectedIdx === idx ? 'selected' : ''}>${d.name} [${d.interval}]</option>`).join('');
+}
+
+// Отрисовка системы (без изменений, но теперь photoIds вместо photos)
+function renderSystem(systemKey, containerId) {
+    const sys = systemsData[systemKey];
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    let html = `<div class="system-card"><h3>${sys.name}</h3>`;
+    
+    if (systemKey === 'roof') {
+        let roofTypeOptions = {
+            rolled: "Рулонная/мастичная",
+            metal: "Металлическая",
+            tile: "Черепичная",
+            asbestos: "Хризотилцементная",
+            combined: "Совмещённая ЖБ"
+        };
+        html += `<div class="roof-type-selector"><label>Тип кровли: </label>
+                 <select id="roofTypeSelect">${Object.entries(roofTypeOptions).map(([v, l]) => `<option value="${v}" ${sys.roofType === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>`;
+    }
+    
+    html += `<div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-outline btn" onclick="exportSystemCSV('${systemKey}')">📊 CSV</button>
+                <button class="btn-outline btn" onclick="exportSystemTXT('${systemKey}')">📄 TXT</button>
+                <button class="btn-outline btn" onclick="exportSystemZip('${systemKey}')">📦 ZIP+фото</button>
+             </div>`;
+    
+    for (let eIdx = 0; eIdx < sys.elements.length; eIdx++) {
+        const elem = sys.elements[eIdx];
+        html += `<div style="margin-bottom:20px; border-top:2px solid #cde0ec; padding-top:12px;">
+                    <strong><input type="text" class="elem-name" data-sys="${systemKey}" data-eidx="${eIdx}" value="${escapeHtml(elem.name)}" style="width: 200px; display: inline-block;"></strong> 
+                    <span style="float:right;">Pк: <input type="number" step="any" class="elem-total-size" data-sys="${systemKey}" data-eidx="${eIdx}" value="${elem.totalSize}" style="width:90px;"> м²/м/шт</span>
+                 </div>`;
+        html += `<table class="elem-table"><thead><tr>
+                    <th>Дефект (название / интервал)</th>
+                    <th>Pi</th>
+                    <th>Фi, % (ред.)</th>
+                    <th>Уд.вес %</th>
+                    <th>Вклад %</th>
+                    <th>Фото</th>
+                    <th></th>
+                  </thead><tbody>`;
+        for (let pIdx = 0; pIdx < elem.parts.length; pIdx++) {
+            const part = elem.parts[pIdx];
+            const fiValue = getFiForPart(part, sys.defectLib, part.defectIdx);
+            const weight = (part.defectSize / elem.totalSize) * 100;
+            const contribution = fiValue * (part.defectSize / elem.totalSize);
+            const photoCount = (part.photoIds && part.photoIds.length) ? part.photoIds.length : 0;
+            html += `<tr>
+                         <td><select class="defect-select" data-sys="${systemKey}" data-eidx="${eIdx}" data-pidx="${pIdx}">${buildSelectOptions(sys.defectLib, part.defectIdx)}</select></td>
+                         <td><input type="number" step="any" class="defect-size" data-sys="${systemKey}" data-eidx="${eIdx}" data-pidx="${pIdx}" value="${part.defectSize}"></td>
+                         <td><div class="fi-control"><input type="number" step="any" class="fi-input" data-sys="${systemKey}" data-eidx="${eIdx}" data-pidx="${pIdx}" value="${fiValue}"><div class="fi-buttons"><button class="fi-btn" data-boundary="lower">нижн</button><button class="fi-btn" data-boundary="middle">средн</button><button class="fi-btn" data-boundary="upper">верх</button></div></div></td>
+                        <td class="weight-cell">${weight.toFixed(2)}%</td>
+                        <td class="contrib-cell">${contribution.toFixed(2)}%</td>
+                        <td><button class="btn-icon" onclick="openPhotoModal('${systemKey}', ${eIdx}, ${pIdx})">📷 (${photoCount})</button></td>
+                        <td><button class="remove-part" data-sys="${systemKey}" data-eidx="${eIdx}" data-pidx="${pIdx}">✖</button></td>
+                      </tr>`;
+        }
+        html += `<tr><td colspan="7"><button class="add-part" data-sys="${systemKey}" data-eidx="${eIdx}">+ Добавить дефект к элементу</button></td></tr>`;
+        html += `</tbody></table>`;
+    }
+    html += `<button class="add-element" data-sys="${systemKey}">+ Добавить новый элемент системы</button>`;
+    
+    // Протокол расчёта (полный)
+    let protocol = `📋 ПРОТОКОЛ РАСЧЁТА ФИЗИЧЕСКОГО ИЗНОСА (${sys.name})\n`;
+    for (let e of sys.elements) {
+        for (let p of e.parts) {
+            let fiCurr = getFiForPart(p, sys.defectLib, p.defectIdx);
+            let pi = p.defectSize;
+            let pk = e.totalSize;
+            let weight = (pi / pk) * 100;
+            let contrib = fiCurr * (pi / pk);
+            let defectName = sys.defectLib[p.defectIdx]?.name || "дефект";
+            protocol += `\n📌 Дефект "${defectName}" (элемент "${e.name}"):\n`;
+            protocol += `   • Размер дефекта Pi = ${pi}, Общий размер Pк = ${pk}\n`;
+            protocol += `   • Удельный вес (Pi/Pк) = ${pi} / ${pk} = ${weight.toFixed(2)}%\n`;
+            protocol += `   • Физический износ участка Фi = ${fiCurr}%\n`;
+            protocol += `   • Вклад в износ элемента = Фi × (Pi/Pк) = ${fiCurr} × ${(pi/pk).toFixed(4)} = ${contrib.toFixed(2)}%\n`;
+        }
+    }
+    const stats = computeSystemStats(sys);
+    protocol += `\n📊 Σ(Фi × Pi) = ${stats.totalFiPi.toFixed(2)}\n`;
+    protocol += `📊 ΣPк (уникальная сумма) = ${stats.uniquePkSum.toFixed(2)}\n`;
+    protocol += `📊 Износ системы = ${stats.totalFiPi.toFixed(2)} / ${stats.uniquePkSum.toFixed(2)} = ${stats.rawWear.toFixed(4)} → округлённо ${stats.roundedWear}%\n`;
+    protocol += `📌 Категория: ${stats.category}`;
+    
+    html += `<div class="calc-protocol">${protocol.replace(/\n/g, '<br>')}</div>`;
+    html += `</div>`;
+    container.innerHTML = html;
+    attachSystemEvents(systemKey);
+    
+    if (systemKey === 'roof') {
+        const roofSelect = document.getElementById('roofTypeSelect');
+        if (roofSelect) roofSelect.onchange = () => changeRoofType(roofSelect.value);
+    }
+}
+
+// Привязка событий (без изменений, но теперь part.photoIds используется)
+function attachSystemEvents(sysKey) {
+    const sys = systemsData[sysKey];
+    
+    document.querySelectorAll(`.elem-name[data-sys="${sysKey}"]`).forEach(inp => {
+        inp.onchange = () => {
+            let eidx = parseInt(inp.dataset.eidx);
+            sys.elements[eidx].name = inp.value;
+            saveToLocal();
+            renderSystem(sysKey, `${sysKey}-root`);
+        };
+    });
+    
+    document.querySelectorAll(`.elem-total-size[data-sys="${sysKey}"]`).forEach(inp => {
+        inp.onchange = () => {
+            let eidx = parseInt(inp.dataset.eidx);
+            sys.elements[eidx].totalSize = parseFloat(inp.value) || 0;
+            saveToLocal();
+            renderSystem(sysKey, `${sysKey}-root`);
+        };
+    });
+    
+    document.querySelectorAll(`.defect-select[data-sys="${sysKey}"]`).forEach(sel => {
+        sel.onchange = () => {
+            let eidx = parseInt(sel.dataset.eidx);
+            let pidx = parseInt(sel.dataset.pidx);
+            let newIdx = parseInt(sel.value);
+            sys.elements[eidx].parts[pidx].defectIdx = newIdx;
+            let defect = sys.defectLib[newIdx];
+            if (defect.name !== "Пользовательский ввод") sys.elements[eidx].parts[pidx].customFi = null;
+            saveToLocal();
+            renderSystem(sysKey, `${sysKey}-root`);
+        };
+    });
+    
+    document.querySelectorAll(`.defect-size[data-sys="${sysKey}"]`).forEach(inp => {
+        inp.onchange = () => {
+            let eidx = parseInt(inp.dataset.eidx);
+            let pidx = parseInt(inp.dataset.pidx);
+            sys.elements[eidx].parts[pidx].defectSize = parseFloat(inp.value) || 0;
+            saveToLocal();
+            renderSystem(sysKey, `${sysKey}-root`);
+        };
+    });
+    
+    document.querySelectorAll(`.fi-input[data-sys="${sysKey}"]`).forEach(inp => {
+        inp.onchange = () => {
+            let eidx = parseInt(inp.dataset.eidx);
+            let pidx = parseInt(inp.dataset.pidx);
+            let val = parseFloat(inp.value);
+            sys.elements[eidx].parts[pidx].customFi = isNaN(val) ? null : val;
+            saveToLocal();
+            renderSystem(sysKey, `${sysKey}-root`);
+        };
+    });
+    
+    document.querySelectorAll(`.fi-btn`).forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            let row = btn.closest('tr');
+            if (!row) return;
+            let sel = row.querySelector('.defect-select');
+            let inp = row.querySelector('.fi-input');
+            if (!sel || !inp) return;
+            let eidx = parseInt(sel.dataset.eidx);
+            let pidx = parseInt(sel.dataset.pidx);
+            let part = sys.elements[eidx].parts[pidx];
+            let defectIdx = part.defectIdx;
+            let boundary = btn.getAttribute('data-boundary');
+            setFiBoundary(part, sys.defectLib, defectIdx, boundary);
+            inp.value = getFiForPart(part, sys.defectLib, defectIdx);
+            saveToLocal();
+            renderSystem(sysKey, `${sysKey}-root`);
+        };
+    });
+    
+    document.querySelectorAll(`.remove-part[data-sys="${sysKey}"]`).forEach(btn => {
+        btn.onclick = () => {
+            let eidx = parseInt(btn.dataset.eidx);
+            let pidx = parseInt(btn.dataset.pidx);
+            sys.elements[eidx].parts.splice(pidx, 1);
+            if (sys.elements[eidx].parts.length === 0) sys.elements.splice(eidx, 1);
+            saveToLocal();
+            renderSystem(sysKey, `${sysKey}-root`);
+        };
+    });
+    
+    document.querySelectorAll(`.add-part[data-sys="${sysKey}"]`).forEach(btn => {
+        btn.onclick = () => {
+            let eidx = parseInt(btn.dataset.eidx);
+            sys.elements[eidx].parts.push({ defectIdx: 0, customFi: null, defectSize: 1.0, photoIds: [] });
+            saveToLocal();
+            renderSystem(sysKey, `${sysKey}-root`);
+        };
+    });
+    
+    let addElemBtn = document.querySelector(`.add-element[data-sys="${sysKey}"]`);
+    if (addElemBtn) {
+        addElemBtn.onclick = () => {
+            let newName = prompt("Название элемента системы:", "Новый участок");
+            if (newName) {
+                sys.elements.push({ name: newName, totalSize: 10, parts: [{ defectIdx: 0, customFi: null, defectSize: 2, photoIds: [] }] });
+                saveToLocal();
+                renderSystem(sysKey, `${sysKey}-root`);
+            }
+        };
+    }
+}
+
+function renderAllSystems() {
+    renderSystem('hvs', 'hvs-root');
+    renderSystem('gvs', 'gvs-root');
+    renderSystem('heat', 'heat-root');
+    renderSystem('sewer', 'sewer-root');
+    renderSystem('elec', 'elec-root');
+    renderSystem('roof', 'roof-root');
+}
+
+function escapeHtml(str) { return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'); }
+// ======================== ЧАСТЬ 4: ЭКСПОРТНЫЕ ФУНКЦИИ (CSV, TXT, ZIP) И ИНИЦИАЛИЗАЦИЯ ========================
+
+// Экспорт CSV для одной системы
+window.exportSystemCSV = function(sysKey) {
+    const sys = systemsData[sysKey];
+    const address = document.getElementById('addressInput').value || "";
+    const date = document.getElementById('dateInput').value || "";
+    let rows = [];
+    rows.push([`"Объект: ${address}"`]);
+    rows.push([`"Дата: ${date}"`]);
+    rows.push([`"Система: ${sys.name}"`]);
+    rows.push([]);
+    rows.push(["Элемент", "Pк", "Дефект (интервал)", "Pi", "Фi %", "Уд.вес %", "Вклад %", "Фото (кол-во)"]);
+    for (let elem of sys.elements) {
+        for (let part of elem.parts) {
+            let defect = sys.defectLib[part.defectIdx] || { name: "?", interval: "" };
+            let fiVal = getFiForPart(part, sys.defectLib, part.defectIdx);
+            let weight = (part.defectSize / elem.totalSize) * 100;
+            let contrib = fiVal * (part.defectSize / elem.totalSize);
+            let photoCount = (part.photos && part.photos.length) ? part.photos.length : 0;
+            let fmt = n => n.toString().replace('.', ',');
+            rows.push([
+                elem.name, fmt(elem.totalSize),
+                `${defect.name} [${defect.interval}]`,
+                fmt(part.defectSize), fmt(fiVal),
+                fmt(weight), fmt(contrib), photoCount
+            ]);
+        }
+    }
+    let csvContent = rows.map(row => row.join(";")).join("\n");
+    const blob = new Blob(["\uFEFF" + csvContent], {type: "text/csv;charset=utf-8;"});
+    saveAs(blob, `${sys.name}_износ.csv`);
+};
+
+// Экспорт TXT протокола для одной системы (полный, с формулами)
+window.exportSystemTXT = function(sysKey) {
+    const sys = systemsData[sysKey];
+    const address = document.getElementById('addressInput').value || "";
+    const date = document.getElementById('dateInput').value || "";
+    let protocol = `ПРОТОКОЛ РАСЧЁТА ФИЗИЧЕСКОГО ИЗНОСА\nОбъект: ${address}\nДата: ${date}\nСистема: ${sys.name}\n\n`;
+    for (let e of sys.elements) {
+        for (let p of e.parts) {
+            let fiCurr = getFiForPart(p, sys.defectLib, p.defectIdx);
+            let pi = p.defectSize;
+            let pk = e.totalSize;
+            let weight = (pi/pk)*100;
+            let contrib = fiCurr*(pi/pk);
+            let defectName = sys.defectLib[p.defectIdx]?.name || "дефект";
+            protocol += `📌 Дефект "${defectName}" (элемент "${e.name}"):\n`;
+            protocol += `   • Размер дефекта Pi = ${pi}, Общий размер Pк = ${pk}\n`;
+            protocol += `   • Удельный вес (Pi/Pк) = ${pi}/${pk} = ${weight.toFixed(2)}%\n`;
+            protocol += `   • Физический износ участка Фi = ${fiCurr}%\n`;
+            protocol += `   • Вклад в износ элемента = Фi × (Pi/Pк) = ${fiCurr} × ${(pi/pk).toFixed(4)} = ${contrib.toFixed(2)}%\n\n`;
+        }
+    }
+    const stats = computeSystemStats(sys);
+    protocol += `📊 Σ(Фi × Pi) = ${stats.totalFiPi.toFixed(2)}\n`;
+    protocol += `📊 ΣPк (уникальная сумма) = ${stats.uniquePkSum.toFixed(2)}\n`;
+    protocol += `📊 Износ системы = ${stats.totalFiPi.toFixed(2)} / ${stats.uniquePkSum.toFixed(2)} = ${stats.rawWear.toFixed(4)} → округлённо ${stats.roundedWear}%\n`;
+    protocol += `📌 Категория: ${stats.category}`;
+    const blob = new Blob([protocol], {type: "text/plain;charset=utf-8"});
+    saveAs(blob, `${sys.name}_протокол.txt`);
+};
+
+// Экспорт ZIP (CSV + TXT + все фото по папкам)
+window.exportSystemZip = async function(sysKey) {
+    const zip = new JSZip();
+    const sys = systemsData[sysKey];
+    const address = document.getElementById('addressInput').value || "Объект";
+    const date = document.getElementById('dateInput').value || "";
+    
+    // CSV
+    let csvRows = [];
+    csvRows.push([`"Объект: ${address}"`]);
+    csvRows.push([`"Дата: ${date}"`]);
+    csvRows.push([`"Система: ${sys.name}"`]);
+    csvRows.push([]);
+    csvRows.push(["Элемент","Pк","Дефект (интервал)","Pi","Фi %","Уд.вес %","Вклад %","Фото"]);
+    for (let elem of sys.elements) {
+        for (let part of elem.parts) {
+            let defect = sys.defectLib[part.defectIdx] || { name: "?", interval: "" };
+            let fiVal = getFiForPart(part, sys.defectLib, part.defectIdx);
+            let weight = (part.defectSize / elem.totalSize) * 100;
+            let contrib = fiVal * (part.defectSize / elem.totalSize);
+            let photoCount = (part.photos && part.photos.length) ? part.photos.length : 0;
+            let fmt = n => n.toString().replace('.', ',');
+            csvRows.push([
+                elem.name, fmt(elem.totalSize),
+                `${defect.name} [${defect.interval}]`,
+                fmt(part.defectSize), fmt(fiVal),
+                fmt(weight), fmt(contrib), photoCount
+            ]);
+        }
+    }
+    let csvContent = csvRows.map(r => r.join(";")).join("\n");
+    zip.file("report.csv", "\uFEFF" + csvContent);
+    
+    // TXT протокол (полный)
+    let protocol = `ПРОТОКОЛ РАСЧЁТА ФИЗИЧЕСКОГО ИЗНОСА\nОбъект: ${address}\nДата: ${date}\nСистема: ${sys.name}\n\n`;
+    for (let e of sys.elements) {
+        for (let p of e.parts) {
+            let fiCurr = getFiForPart(p, sys.defectLib, p.defectIdx);
+            let pi = p.defectSize;
+            let pk = e.totalSize;
+            let weight = (pi/pk)*100;
+            let contrib = fiCurr*(pi/pk);
+            let defectName = sys.defectLib[p.defectIdx]?.name || "дефект";
+            protocol += `📌 Дефект "${defectName}" (элемент "${e.name}"):\n`;
+            protocol += `   • Pi = ${pi}, Pк = ${pk}\n`;
+            protocol += `   • Уд.вес = ${weight.toFixed(2)}%\n`;
+            protocol += `   • Фi = ${fiCurr}%\n`;
+            protocol += `   • Вклад = ${contrib.toFixed(2)}%\n\n`;
+        }
+    }
+    const stats = computeSystemStats(sys);
+    protocol += `📊 Σ(Фi×Pi) = ${stats.totalFiPi.toFixed(2)}\n📊 ΣPк = ${stats.uniquePkSum.toFixed(2)}\n📊 Износ = ${stats.rawWear.toFixed(4)} → ${stats.roundedWear}%\n📌 Категория: ${stats.category}`;
+    zip.file("protocol.txt", protocol);
+    
+        // Фото (извлечение из IndexedDB)
+    for (let eIdx = 0; eIdx < sys.elements.length; eIdx++) {
+        let elem = sys.elements[eIdx];
+        for (let pIdx = 0; pIdx < elem.parts.length; pIdx++) {
+            let part = elem.parts[pIdx];
+            if (part.photoIds && part.photoIds.length) {
+                let defectName = (sys.defectLib[part.defectIdx]?.name || "дефект").substring(0, 30);
+                let folder = `photos/${elem.name}/дефект_${pIdx + 1}_${defectName}/`;
+                for (let i = 0; i < part.photoIds.length; i++) {
+                    const photoId = part.photoIds[i];
+                    const blob = await getPhotoBlob(photoId);
+                    if (blob) {
+                        let ext = blob.type.split('/')[1] || 'jpg';
+                        zip.file(folder + `photo_${i + 1}.${ext}`, blob);
+                    }
+                }
+            }
+        }
+    }
+	
+    let content = await zip.generateAsync({ type: "blob" });
+    saveAs(content, `${sys.name}_${address.substring(0,20)}.zip`);
+};
+
+// Добавление модального окна в DOM
+// Добавление модального окна в DOM (с индикатором загрузки)
+function addModal() {
+    if (document.getElementById('photoModal')) return;
+    let modalDiv = document.createElement('div');
+    modalDiv.id = 'photoModal';
+    modalDiv.className = 'modal';
+    modalDiv.innerHTML = `
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Управление фотографиями</h3>
+            <p>Всего фото: <span id="photoCount">0</span></p>
+            <div id="modalLoading" style="display:none; background:#f0f0f0; padding:10px; border-radius:20px; margin:10px 0; text-align:center;">⏳ Загрузка фотографий, пожалуйста, подождите...</div>
+            <button id="modalAddPhotoBtn" class="btn">+ Добавить фото</button>
+            <div id="modalPhotoGallery" class="photo-gallery-modal"></div>
+        </div>
+    `;
+    document.body.appendChild(modalDiv);
+    modalDiv.querySelector('.close').onclick = () => modalDiv.style.display = 'none';
+    window.onclick = (event) => { if (event.target == modalDiv) modalDiv.style.display = 'none'; };
+}
+addModal();
+window.openPhotoModal = openPhotoModal; // делаем функцию глобальной для вызова из onclick
+
+// Инициализация: загружаем данные из localStorage, если пусто — оставляем пустым (никаких примеров)
+loadFromLocal();
+// Если хотите, чтобы при первом открытии был пустой чистый лист, ничего не добавляем.
+// При желании можно раскомментировать строку ниже, чтобы добавить демо-элемент для ХВС (но вы просили убрать пример)
+// if (Object.values(systemsData).every(s => s.elements.length === 0)) { /* добавить пустой элемент по желанию */ }
+renderAllSystems();
+
+// Кнопки управления
+document.getElementById('newCalcBtn')?.addEventListener('click', clearCurrentSystem);
+document.getElementById('clearAllBtn')?.addEventListener('click', () => { clearAllSystems(); });
+document.getElementById('fullResetBtn')?.addEventListener('click', () => { fullReset(); });
+document.getElementById('donateBtn')?.addEventListener('click', () => { alert("СБП: 2204310318634865\nЯндекс.Банк\nСпасибо за поддержку!"); });
+
+// Переключение вкладок
+const tabs = document.querySelectorAll('.tab-btn');
+const panes = document.querySelectorAll('.tab-pane');
+tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+        let id = btn.getAttribute('data-tab');
+        panes.forEach(p => p.classList.remove('active-pane'));
+        document.getElementById(id).classList.add('active-pane');
+        tabs.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    });
+});
+
+// Переключение разрешений (ПК, планшет, смартфон)
+const resBtns = document.querySelectorAll('.res-btn');
+resBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const res = btn.getAttribute('data-res');
+        document.body.className = `res-${res}`;
+        resBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    });
+});
+</script>
+</body>
+</html>
